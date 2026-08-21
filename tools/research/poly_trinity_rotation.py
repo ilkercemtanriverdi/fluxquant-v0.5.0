@@ -151,6 +151,55 @@ def finite_str(x):
     return "%.6f" % x
 
 
+# --- Wallet snapshot loading ---
+
+def load_wallet_snapshot(wallet: str):
+    """Load the latest remote collector wallet snapshot when available."""
+    wallet_lower = str(wallet).lower()
+    snapshot = (
+        root()
+        / "data"
+        / "polymarket"
+        / "snapshots"
+        / ("wallet-trades-%s-latest.json" % wallet_lower)
+    )
+
+    if not snapshot.exists():
+        return None
+
+    try:
+        envelope = json.loads(snapshot.read_text())
+
+        data = envelope.get("data", envelope) if isinstance(envelope, dict) else envelope
+
+        if isinstance(data, dict):
+            snapshot_wallet = str(data.get("wallet", "")).lower()
+            requested_wallet = str(wallet).lower()
+
+            if not snapshot_wallet:
+                raise RuntimeError("SNAPSHOT_WALLET_MISSING")
+
+            if snapshot_wallet != requested_wallet:
+                raise RuntimeError(
+                    "SNAPSHOT_WALLET_MISMATCH:%s!=%s"
+                    % (snapshot_wallet, requested_wallet)
+                )
+
+        if isinstance(data, list):
+            return data
+
+        if isinstance(data, dict):
+            for key in ("trades", "items", "results", "data"):
+                value = data.get(key)
+                if isinstance(value, list):
+                    return value
+
+        return None
+    except Exception as exc:
+        print("[P2A] snapshot_load_error=%s" % exc)
+        return None
+
+
 # --- Market parsing ---
 
 _SYMBOL_RE = re.compile(r"\b(BTC|ETH|SOL|XRP)\b", re.IGNORECASE)
@@ -197,6 +246,14 @@ def fetch_trades(wallet: str, limit: int = 200, offset: int = 0) -> tuple:
 
 
 def fetch_all_trades_bounded(wallet: str) -> list:
+    snapshot_trades = load_wallet_snapshot(wallet)
+
+    if snapshot_trades is not None:
+        print("[P2A] source=REMOTE_SNAPSHOT")
+        return snapshot_trades[:MAX_TRADES]
+
+    print("[P2A] source=API_FALLBACK")
+
     all_trades = []
     offset = 0
     while len(all_trades) < MAX_TRADES:
@@ -738,6 +795,69 @@ def self_test():
     assert ORDERS_PLACED == 0
     assert API_KEYS_USED == 0
     print("[research] real_money_gate PASS")
+
+    _p3 = "0x04b6d7e930cf9e493c5e6ef24b496294f95594c8"
+    _p2a = "0x4228048ea2f8f571ff2777cc32baee584c5134cb"
+    snap_dir = root() / "data" / "polymarket" / "snapshots"
+    snap_dir.mkdir(parents=True, exist_ok=True)
+
+    p3_file = snap_dir / ("wallet-trades-%s-latest.json" % _p3.lower())
+    p3_envelope = {
+        "collector_version": "1.0.0",
+        "kind": "wallet-trades-%s" % _p3.lower(),
+        "captured_at": "2025-01-01T00:00:00Z",
+        "checksum_sha256": "aaa",
+        "byte_count": 100,
+        "data": {"wallet": _p3, "trades": [{"id": "snap_p3"}]},
+    }
+    p3_file.write_text(json.dumps(p3_envelope))
+
+    p2a_file = snap_dir / ("wallet-trades-%s-latest.json" % _p2a.lower())
+    p2a_envelope = {
+        "collector_version": "1.0.0",
+        "kind": "wallet-trades-%s" % _p2a.lower(),
+        "captured_at": "2025-01-01T00:00:00Z",
+        "checksum_sha256": "bbb",
+        "byte_count": 100,
+        "data": {"wallet": _p2a, "trades": [{"id": "snap_p2a"}]},
+    }
+    p2a_file.write_text(json.dumps(p2a_envelope))
+
+    p3_loaded = load_wallet_snapshot(_p3)
+    assert p3_loaded is not None
+    assert len(p3_loaded) == 1
+    assert p3_loaded[0]["id"] == "snap_p3"
+    print("[research] p2a_wallet_snapshot_load_p3 PASS")
+
+    p2a_loaded = load_wallet_snapshot(_p2a)
+    assert p2a_loaded is not None
+    assert len(p2a_loaded) == 1
+    assert p2a_loaded[0]["id"] == "snap_p2a"
+    print("[research] p2a_wallet_snapshot_load_p2a PASS")
+
+    mismatch_envelope = {
+        "collector_version": "1.0.0",
+        "kind": "wallet-trades-%s" % _p3.lower(),
+        "captured_at": "2025-01-01T00:00:00Z",
+        "checksum_sha256": "ccc",
+        "byte_count": 50,
+        "data": {"wallet": _p2a, "trades": []},
+    }
+    p3_file.write_text(json.dumps(mismatch_envelope))
+    result_wrong = load_wallet_snapshot(_p3)
+    assert result_wrong is None
+    print("[research] wallet_mismatch_rejected PASS")
+
+    missing = snap_dir / "wallet-trades-0x0000000000000000000000000000000000000000-latest.json"
+    if missing.exists():
+        missing.unlink()
+    result_missing = load_wallet_snapshot("0x0000000000000000000000000000000000000000")
+    assert result_missing is None
+    print("[research] missing_snapshot_returns_none PASS")
+
+    p3_file.unlink()
+    p2a_file.unlink()
+    print("[research] cleanup OK")
 
     print("[research] SELF_TEST_PASS")
     print("[research] network=NOT_USED")

@@ -149,7 +149,7 @@ def _build_endpoints(url: str) -> list[tuple[str, str]]:
     return [(url, "direct")]
 
 
-def _write_snapshot(kind: str, payload: dict) -> dict:
+def _write_snapshot(kind: str, payload: dict, wallet: str | None = None) -> dict:
     _ensure_dirs()
     raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     sha = _sha256(raw)
@@ -178,6 +178,8 @@ def _write_snapshot(kind: str, payload: dict) -> dict:
         "captured_at": envelope["captured_at"],
         "record_count": len(payload.get("trades", payload.get("markets", []))) if isinstance(payload, dict) else 1,
     }
+    if wallet:
+        entry["wallet"] = wallet
     manifest = _load_manifest()
     manifest.append(entry)
     _save_manifest(manifest)
@@ -200,7 +202,27 @@ def collect_wallet_trades(wallet: str = POLY_WALLET, limit: int = MAX_TRADES) ->
         offset += len(obj)
         if len(obj) < batch:
             break
-    return _write_snapshot("wallet-trades", {"wallet": wallet, "trades": all_trades[:limit]})
+    payload = {"wallet": wallet, "trades": all_trades[:limit]}
+    wallet_kind = "wallet-trades-%s" % wallet.lower()
+    entry = _write_snapshot(wallet_kind, payload, wallet=wallet)
+
+    _ensure_dirs()
+    generic_latest = SNAPSHOT_DIR / "wallet-trades-latest.json"
+    generic_kind = "wallet-trades"
+    raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    sha = _sha256(raw)
+    envelope = {
+        "collector_version": VERSION,
+        "kind": generic_kind,
+        "captured_at": entry["captured_at"],
+        "checksum_sha256": sha,
+        "byte_count": len(raw),
+        "data": payload,
+    }
+    envelope_raw = (json.dumps(envelope, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    generic_latest.write_bytes(envelope_raw)
+
+    return entry
 
 
 def collect_markets(limit: int = MAX_MARKETS) -> dict:
@@ -295,7 +317,56 @@ def self_test():
     assert API_KEYS_USED == 0
     print("[test] safety_gates PASS")
 
+    _p3 = "0x04b6d7e930cf9e493c5e6ef24b496294f95594c8"
+    _p2a = "0x4228048ea2f8f571ff2777cc32baee584c5134cb"
+    p3_kind = "wallet-trades-%s" % _p3.lower()
+    p2a_kind = "wallet-trades-%s" % _p2a.lower()
+    assert p3_kind != p2a_kind
+    print("[test] wallet_kinds_distinct OK")
+
+    p3_payload = {"wallet": _p3, "trades": [{"id": "t1"}]}
+    p3_entry = _write_snapshot(p3_kind, p3_payload, wallet=_p3)
+    assert p3_entry["wallet"] == _p3
+    assert "wallet-trades-%s" % _p3.lower() in p3_entry["filename"]
+    assert (SNAPSHOT_DIR / p3_entry["filename"]).exists()
+    print("[test] p3_wallet_snapshot OK")
+
+    p2a_payload = {"wallet": _p2a, "trades": [{"id": "t2"}]}
+    p2a_entry = _write_snapshot(p2a_kind, p2a_payload, wallet=_p2a)
+    assert p2a_entry["wallet"] == _p2a
+    assert "wallet-trades-%s" % _p2a.lower() in p2a_entry["filename"]
+    assert (SNAPSHOT_DIR / p2a_entry["filename"]).exists()
+    print("[test] p2a_wallet_snapshot OK")
+
+    p3_loaded = json.loads((SNAPSHOT_DIR / p3_entry["filename"]).read_text())
+    assert p3_loaded["data"]["wallet"] == _p3
+    assert p3_loaded["kind"] == p3_kind
+    p2a_loaded = json.loads((SNAPSHOT_DIR / p2a_entry["filename"]).read_text())
+    assert p2a_loaded["data"]["wallet"] == _p2a
+    assert p2a_loaded["kind"] == p2a_kind
+    print("[test] wallet_snapshot_envelope OK")
+
+    p3_latest = SNAPSHOT_DIR / ("%s-latest.json" % p3_kind)
+    p2a_latest = SNAPSHOT_DIR / ("%s-latest.json" % p2a_kind)
+    assert p3_latest.exists()
+    assert p2a_latest.exists()
+    p3_l = json.loads(p3_latest.read_text())
+    p2a_l = json.loads(p2a_latest.read_text())
+    assert p3_l["data"]["wallet"] == _p3
+    assert p2a_l["data"]["wallet"] == _p2a
+    print("[test] wallet_latest_files OK")
+
+    manifest_after = _load_manifest()
+    wallet_entries = [e for e in manifest_after if e.get("kind", "").startswith("wallet-trades-")]
+    wallet_kinds_in_manifest = [e["kind"] for e in wallet_entries]
+    assert p3_kind in wallet_kinds_in_manifest
+    assert p2a_kind in wallet_kinds_in_manifest
+    assert len(set(wallet_kinds_in_manifest)) >= 2
+    print("[test] manifest_wallet_entries OK")
+
     for f in SNAPSHOT_DIR.glob("test-snap-*"):
+        f.unlink()
+    for f in SNAPSHOT_DIR.glob("wallet-trades-0x*"):
         f.unlink()
     print("[test] cleanup OK")
 
@@ -307,7 +378,8 @@ def main():
     sp = ap.add_subparsers(dest="cmd", required=True)
     sp.add_parser("self-test")
     sp.add_parser("health")
-    sp.add_parser("wallet")
+    wallet_p = sp.add_parser("wallet")
+    wallet_p.add_argument("--wallet", default=POLY_WALLET, help="Wallet address to collect trades for")
     sp.add_parser("markets")
     sp.add_parser("all")
     args = ap.parse_args()
@@ -318,12 +390,14 @@ def main():
         import pprint
         pprint.pprint(health_check())
     elif args.cmd == "wallet":
-        print("[collector] collecting wallet trades...")
+        wallet = getattr(args, "wallet", POLY_WALLET)
+        print("[collector] collecting wallet trades for %s..." % wallet)
         try:
-            e = collect_wallet_trades()
+            e = collect_wallet_trades(wallet=wallet)
             print("[collector] OK %s (%s)" % (e["filename"], e["checksum_sha256"][:12]))
         except Exception as ex:
             print("[collector] FAIL: %s" % ex)
+            sys.exit(1)
     elif args.cmd == "markets":
         print("[collector] collecting markets...")
         try:
@@ -331,7 +405,9 @@ def main():
             print("[collector] OK %s (%s)" % (e["filename"], e["checksum_sha256"][:12]))
         except Exception as ex:
             print("[collector] FAIL: %s" % ex)
+            sys.exit(1)
     elif args.cmd == "all":
+        failed = False
         for kind, fn in [("wallet", collect_wallet_trades), ("markets", collect_markets)]:
             print("[collector] collecting %s..." % kind)
             try:
@@ -339,6 +415,9 @@ def main():
                 print("[collector] OK %s" % e["filename"])
             except Exception as ex:
                 print("[collector] FAIL %s: %s" % (kind, ex))
+                failed = True
+        if failed:
+            sys.exit(1)
     else:
         raise ValueError("Unknown command: %s" % args.cmd)
 

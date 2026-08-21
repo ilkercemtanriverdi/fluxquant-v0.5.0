@@ -22,8 +22,39 @@ jobs:
       - name: Install dependencies
         run: pip install -r src/collectors/polymarket_remote/requirements.txt
 
-      - name: Run collector
-        run: python src/collectors/polymarket_remote/collector.py all
+      - name: Collect P3 wallet trades
+        run: |
+          python src/collectors/polymarket_remote/collector.py wallet \
+            --wallet 0x04b6d7e930cf9e493c5e6ef24b496294f95594c8
+
+      - name: Collect P2A Trinity wallet trades
+        run: |
+          python src/collectors/polymarket_remote/collector.py wallet \
+            --wallet 0x4228048ea2f8f571ff2777cc32baee584c5134cb
+
+      - name: Collect markets
+        run: python src/collectors/polymarket_remote/collector.py markets
+
+      - name: Validate required snapshots exist
+        run: |
+          set -e
+          echo "Checking required wallet snapshots..."
+          for WALLET in 0x04b6d7e930cf9e493c5e6ef24b496294f95594c8 0x4228048ea2f8f571ff2777cc32baee584c5134cb; do
+            WALLET_LOWER=$(echo "$WALLET" | tr '[:upper:]' '[:lower:]')
+            LATEST="data/polymarket/snapshots/wallet-trades-${WALLET_LOWER}-latest.json"
+            if [ ! -f "$LATEST" ]; then
+              echo "FAIL: Required wallet snapshot missing: $LATEST"
+              exit 1
+            fi
+            echo "OK: $LATEST"
+          done
+          MARKETS="data/polymarket/snapshots/markets-latest.json"
+          if [ ! -f "$MARKETS" ]; then
+            echo "FAIL: Required markets snapshot missing: $MARKETS"
+            exit 1
+          fi
+          echo "OK: $MARKETS"
+          echo "All required snapshots present."
 
       - name: Upload snapshot artifacts
         if: always()
