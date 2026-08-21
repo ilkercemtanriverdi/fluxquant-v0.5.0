@@ -40,7 +40,7 @@ MAX_REQUESTS = 40
 RUNTIME_SECONDS = 300
 REQUEST_TIMEOUT = 15
 
-_TARGET_WALLET = "0x4228048ea2f8f571ff2777cc32baee584c5134cb"
+_TARGET_WALLET = "0x04b6d7e930cf9e493c5e6ef24b496294f95594c8"
 _TARGET_SYMBOLS = {"BTC", "ETH", "SOL", "XRP"}
 
 _REQUESTS = 0
@@ -89,6 +89,59 @@ def fnum(x):
         return None
 
 
+
+# --- Snapshot loading ---
+
+def load_wallet_snapshot(wallet: str):
+    """Load the latest remote collector wallet snapshot when available."""
+    snapshot = (
+        _project_root
+        / "data"
+        / "polymarket"
+        / "snapshots"
+        / "wallet-trades-latest.json"
+    )
+
+    if not snapshot.exists():
+        return None
+
+    try:
+        import json
+
+        envelope = json.loads(snapshot.read_text())
+
+        # Remote collector envelope:
+        # {collector_version, kind, captured_at, checksum_sha256, byte_count, data}
+        data = envelope.get("data", envelope) if isinstance(envelope, dict) else envelope
+
+        if isinstance(data, dict):
+            snapshot_wallet = str(data.get("wallet", "")).lower()
+            requested_wallet = str(wallet).lower()
+
+            if not snapshot_wallet:
+                raise RuntimeError("SNAPSHOT_WALLET_MISSING")
+
+            if snapshot_wallet != requested_wallet:
+                raise RuntimeError(
+                    "SNAPSHOT_WALLET_MISMATCH:%s!=%s"
+                    % (snapshot_wallet, requested_wallet)
+                )
+
+        if isinstance(data, list):
+            return data
+
+        if isinstance(data, dict):
+            for key in ("trades", "items", "results", "data"):
+                value = data.get(key)
+                if isinstance(value, list):
+                    return value
+
+        return None
+    except Exception as exc:
+        print("[P3-DNA] snapshot_load_error=%s" % exc)
+        return None
+
+
 # --- Trade fetching ---
 
 def fetch_trades(wallet: str, limit: int = 200, offset: int = 0) -> tuple:
@@ -97,6 +150,14 @@ def fetch_trades(wallet: str, limit: int = 200, offset: int = 0) -> tuple:
 
 
 def fetch_all_trades_bounded(wallet: str) -> list:
+    snapshot_trades = load_wallet_snapshot(wallet)
+
+    if snapshot_trades is not None:
+        print("[P3-DNA] source=REMOTE_SNAPSHOT")
+        return snapshot_trades[:MAX_TRADES]
+
+    print("[P3-DNA] source=API_FALLBACK")
+
     all_trades = []
     offset = 0
     while len(all_trades) < MAX_TRADES:
