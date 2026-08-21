@@ -1,0 +1,138 @@
+import { createReadStream } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
+import { resolve } from 'node:path';
+import type { DiscoveredPolymarketMarket, MarketEvent } from '../domain/types.js';
+import { PairExecutionValidator } from '../scan/pair-execution-validator.js';
+
+interface MetadataSnapshot { markets?: DiscoveredPolymarketMarket[] }
+
+function numberFlag(args: string[], name: string): number | undefined {
+  const prefix = `--${name}=`;
+  const raw = args.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+  if (raw === undefined) return undefined;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) throw new Error(`Invalid --${name}: ${raw}`);
+  return value;
+}
+
+function listNumberFlag(args: string[], name: string): number[] | undefined {
+  const prefix = `--${name}=`;
+  const raw = args.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+  if (raw === undefined) return undefined;
+  const values = raw.split(',').map(Number);
+  if (values.length === 0 || values.some((v) => !Number.isFinite(v))) throw new Error(`Invalid --${name}: ${raw}`);
+  return values;
+}
+
+function isMarketEvent(value: unknown): value is MarketEvent {
+  if (!value || typeof value !== 'object') return false;
+  const e = value as Partial<MarketEvent>;
+  return (e.venue === 'polymarket' || e.venue === 'binance') && typeof e.instrument === 'string' &&
+    typeof e.eventTimeMs === 'number' && typeof e.receivedTimeMs === 'number' && typeof e.kind === 'string';
+}
+
+function pct(value: number): string { return `${(value * 100).toFixed(2)}%`; }
+function money(value: number): string { return `${value < 0 ? '-' : ''}$${Math.abs(value).toFixed(4)}`; }
+
+function usage(): never {
+  throw new Error(
+    'Usage: npm run pairvalidate -- <events.jsonl> <markets.json> [output.json] ' +
+    '[--fee-rate=0.07] [--shares=1] [--min-edge=0.015] [--freshness-ms=500] ' +
+    '[--latency-ms=0,50,100,150,250] [--slippage=0,0.005,0.01,0.02]',
+  );
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const positional = args.filter((arg) => !arg.startsWith('--'));
+  const [eventArg, metadataArg, outputArg] = positional;
+  if (!eventArg || !metadataArg) usage();
+
+  const eventPath = resolve(eventArg);
+  const metadataPath = resolve(metadataArg);
+  const outputPath = resolve(outputArg ?? './data/pair-execution-validation.json');
+  const metadata = JSON.parse(await readFile(metadataPath, 'utf8')) as MetadataSnapshot;
+  const markets = metadata.markets ?? [];
+  if (markets.length === 0) throw new Error('Metadata snapshot contains no markets.');
+
+  const tokenIds = new Set(markets.flatMap((m) => m.tokens.map((t) => t.tokenId)));
+  const relevant: MarketEvent[] = [];
+  let linesSeen = 0;
+  let invalidLines = 0;
+  const input = createReadStream(eventPath, { encoding: 'utf8' });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  for await (const line of lines) {
+    linesSeen += 1;
+    if (line.trim() === '') continue;
+    try {
+      const parsed = JSON.parse(line) as unknown;
+      if (!isMarketEvent(parsed)) { invalidLines += 1; continue; }
+      if (parsed.venue === 'polymarket' && tokenIds.has(parsed.instrument)) relevant.push(parsed);
+    } catch (error) {
+      if (error instanceof SyntaxError) { invalidLines += 1; continue; }
+      throw error;
+    }
+  }
+
+  relevant.sort((a, b) => a.receivedTimeMs - b.receivedTimeMs || a.eventTimeMs - b.eventTimeMs || a.instrument.localeCompare(b.instrument));
+
+  const validator = new PairExecutionValidator(markets, {
+    fallbackPlatformFeeRate: numberFlag(args, 'fee-rate'),
+    shares: numberFlag(args, 'shares') ?? 1,
+    minLockedReturnOnCost: numberFlag(args, 'min-edge') ?? 0.015,
+    freshnessMs: numberFlag(args, 'freshness-ms') ?? 500,
+    latenciesMs: listNumberFlag(args, 'latency-ms'),
+    slippagePerLeg: listNumberFlag(args, 'slippage'),
+    oneFillPerMarket: true,
+  });
+
+  let i = 0;
+  while (i < relevant.length) {
+    const ts = relevant[i]?.receivedTimeMs;
+    if (ts === undefined) break;
+    const batch: MarketEvent[] = [];
+    while (i < relevant.length && relevant[i]?.receivedTimeMs === ts) {
+      const event = relevant[i];
+      if (event) batch.push(event);
+      i += 1;
+    }
+    validator.applyReceivedBatch(ts, batch);
+  }
+
+  const report = validator.finish();
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    source: { eventPath, metadataPath, linesSeen, invalidLines, relevantEvents: relevant.length },
+    report,
+  };
+  await writeFile(outputPath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+
+  console.log(`[pairvalidate] mode=${report.mode}`);
+  console.log(`[pairvalidate] markets=${report.marketsEligible} relevant_events=${relevant.length} accepted=${report.eventsAccepted} stale_arrivals=${report.staleArrivalDrops}`);
+  console.log(`[pairvalidate] freshness=${report.freshnessMs}ms shares=${report.shares} min_edge=${pct(report.minLockedReturnOnCost)} detection_attempts=${report.detectionAttempts.length}`);
+  console.log(`[pairvalidate] historical_top_only_events=${report.topOnlyHistoricalEvents} clock=RECEIVED_TIME same_timestamp=BATCHED one_fill_per_market=YES`);
+  for (const row of report.scenarios) {
+    console.log(
+      `[pairvalidate] latency=${String(row.latencyMs).padStart(3)}ms slip_leg=${row.slippagePerLeg.toFixed(3)} ` +
+      `exec=${String(row.executed).padStart(3)} markets=${String(row.uniqueMarketsExecuted).padStart(3)} ` +
+      `pnl=${money(row.lockedPnlUsd)} roi=${pct(row.roi)} median=${pct(row.medianLockedReturnOnCost)} ` +
+      `reject_stale=${row.rejected.STALE_QUOTE} reject_edge=${row.rejected.EDGE_DECAYED}`,
+    );
+  }
+  const key = report.scenarios.find((row) => row.latencyMs === 100 && Math.abs(row.slippagePerLeg - 0.01) < 1e-12);
+  if (key) {
+    const verdict = key.executed === 0
+      ? 'NO_SURVIVING_EDGE_AT_100MS_PLUS_1C_PER_LEG'
+      : key.roi > 0
+        ? 'SURVIVING_EDGE_RESEARCH_CANDIDATE_NOT_LIVE_PROOF'
+        : 'NON_POSITIVE_AFTER_EXECUTION_STRESS';
+    console.log(`[pairvalidate] reference_100ms_1c_verdict=${verdict}`);
+  }
+  console.log(`[pairvalidate] report=${outputPath}`);
+}
+
+void main().catch((error) => {
+  console.error('[pairvalidate] failed', error);
+  process.exitCode = 1;
+});

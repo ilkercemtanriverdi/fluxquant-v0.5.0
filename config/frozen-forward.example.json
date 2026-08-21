@@ -1,0 +1,34 @@
+{
+  "name": "OpenMarket Frozen Forward 2026-04-18 to 2026-04-21",
+  "probabilityReport": "data/openmarket-probability-report-benchmark.json",
+  "outputDir": "data/fluxquant-suite-2026-04-18-21",
+  "quotePreset": "strict",
+  "feeRate": 0.07,
+  "minEdge": 0.015,
+  "targetShares": 1,
+  "maxAdjustment": 1,
+  "allMarkets": true,
+  "strategies": ["model", "market-control", "pair-arb"],
+  "runs": [
+    {
+      "date": "2026-04-18",
+      "events": "data/openmarket-events-2026-04-18-holdout.jsonl",
+      "markets": "data/openmarket-markets-2026-04-18-holdout-shadow.json"
+    },
+    {
+      "date": "2026-04-19",
+      "events": "data/openmarket-events-2026-04-19-holdout.jsonl",
+      "markets": "data/openmarket-markets-2026-04-19-holdout-shadow.json"
+    },
+    {
+      "date": "2026-04-20",
+      "events": "data/openmarket-events-2026-04-20-holdout.jsonl",
+      "markets": "data/openmarket-markets-2026-04-20-holdout-shadow.json"
+    },
+    {
+      "date": "2026-04-21",
+      "events": "data/openmarket-events-2026-04-21-holdout.jsonl",
+      "markets": "data/openmarket-markets-2026-04-21-holdout-shadow.json"
+    }
+  ]
+}

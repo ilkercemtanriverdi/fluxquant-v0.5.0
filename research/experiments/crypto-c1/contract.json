@@ -1,0 +1,62 @@
+{
+  "bootstrap": {
+    "replications": 5000,
+    "seed": 1337
+  },
+  "capability": "CRYPTO_C1_BINANCE_SPOT_BASELINE",
+  "contract_version": "1.0",
+  "cost_model": {
+    "fee_bps_per_side": 10.0,
+    "note": "Conservative research assumption, not asserted as the user's account-specific Binance fee.",
+    "round_trip_bps": 24.0,
+    "slippage_bps_per_side": 2.0
+  },
+  "created_date_utc": "2026-08-17",
+  "data_window": {
+    "development_end_exclusive_utc": "2026-01-01T00:00:00Z",
+    "holdout_end_exclusive_utc": "2026-08-01T00:00:00Z",
+    "holdout_start_utc": "2026-01-01T00:00:00Z",
+    "start_utc": "2024-01-01T00:00:00Z"
+  },
+  "football_research": "FROZEN_UNCHANGED",
+  "holdout_gate": {
+    "bootstrap_95pct_lower_bound_gt": 0.0,
+    "max_single_symbol_positive_pnl_share": 0.6,
+    "mean_net_return_gt": 0.0,
+    "min_combined_trades": 50,
+    "min_positive_symbols": 2
+  },
+  "hypothesis": {
+    "execution": {
+      "entry": "NEXT_15M_BAR_OPEN",
+      "exit": "OPEN_AFTER_4_COMPLETE_15M_BARS",
+      "holding_period_bars": 4,
+      "overlapping_positions_per_symbol": "FORBIDDEN"
+    },
+    "name": "VOLUME_CONFIRMED_1H_MOMENTUM_LONG",
+    "signal_at_completed_15m_bar": {
+      "current_quote_volume_vs_prior_96_bar_mean_min": 1.5,
+      "four_bar_taker_buy_quote_share_min": 0.55,
+      "one_hour_return_min": 0.005
+    },
+    "tuning": "NONE"
+  },
+  "interval": "15m",
+  "polymarket_research": "FROZEN_UNCHANGED",
+  "production_v1_5": "UNCHANGED",
+  "project": "FluxQuant",
+  "purpose": "Pre-registered, no-tuning shadow-only baseline validation using public Binance Spot 15m klines.",
+  "real_money_gate": "NO_GO",
+  "source": {
+    "authentication": "NONE",
+    "base_url": "https://data-api.binance.vision",
+    "endpoint": "/api/v3/klines",
+    "insecure_fallback": "FORBIDDEN",
+    "tls_verification": "REQUIRED"
+  },
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ]
+}

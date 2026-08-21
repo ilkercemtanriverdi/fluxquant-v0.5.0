@@ -1,0 +1,55 @@
+name: Polymarket Collector
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r src/collectors/polymarket_remote/requirements.txt
+
+      - name: Run collector
+        run: python src/collectors/polymarket_remote/collector.py all
+
+      - name: Upload snapshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymarket-snapshots-${{ github.run_id }}
+          path: data/polymarket/snapshots/*.json
+          retention-days: 30
+
+      - name: Check snapshot integrity
+        id: check
+        run: |
+          if [ -f "data/polymarket/snapshots/_manifest.json" ]; then
+            COUNT=$(python -c "import json; print(len(json.load(open('data/polymarket/snapshots/_manifest.json'))))")
+            echo "snapshot_count=$COUNT" >> "$GITHUB_OUTPUT"
+            echo "manifest_ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "snapshot_count=0" >> "$GITHUB_OUTPUT"
+            echo "manifest_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit snapshots
+        if: steps.check.outputs.manifest_ok == 'true'
+        run: |
+          git config user.name "polymarket-collector"
+          git config user.email "collector@fluxquant.local"
+          git add data/polymarket/snapshots/
+          git diff --cached --quiet || git commit -m "polymarket snapshots [skip ci] run=${{ github.run_id }}"
+          git push

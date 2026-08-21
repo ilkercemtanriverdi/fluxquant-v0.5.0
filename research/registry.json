@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "checkpointDate": "2026-08-17",
+  "mission": "One income-oriented AI automated trader system spanning crypto, football/betting, and Polymarket.",
+  "governance": {
+    "userQuestionIsNotPivot": true,
+    "silentPivotForbidden": true,
+    "reuseFirstInventSecond": true,
+    "shortestCrediblePath": true,
+    "realMoneyGate": "NO_GO",
+    "productionVersion": "1.5.0"
+  },
+  "strategies": [
+    {
+      "id": "football.market-edge",
+      "market": "football",
+      "status": "BLOCKED",
+      "mode": "paper",
+      "hypothesis": "Frozen multi-bookmaker football price-edge research remains the strongest current measured pricing signal and should be unblocked without retuning.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "src/sports/research-engine.ts"
+      },
+      "evidence": [
+        {
+          "kind": "holdout",
+          "summary": "517 selections; ROI +4.92%; ROI 95% CI [-12.70%, +22.79%]."
+        },
+        {
+          "kind": "clv",
+          "summary": "Mean fair CLV +1.65%; 95% CI [+0.54%, +2.74%]."
+        }
+      ],
+      "blockers": [
+        "FOOTBALL_DATA_TRANSPORT_CURRENT_NETWORK"
+      ],
+      "nextTest": "Resolve source transport using a bounded provenance-preserving path; do not retune the frozen method.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "crypto.existing-alpha-family",
+      "market": "crypto",
+      "status": "KEEP",
+      "mode": "research",
+      "hypothesis": "Reuse existing Binance feed, live monitor, carry, triangular, expiry-carry, altcoin-flow and shadow capabilities before inventing another crypto strategy.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "src/feeds/binance.ts"
+      },
+      "evidence": [
+        {
+          "kind": "capability",
+          "summary": "Existing v1.5 feed/shadow/scout architecture is reusable; recent C1 runner is prepared evidence candidate only and is not a project pivot."
+        },
+        {
+          "kind": "holdout",
+          "summary": "Crypto C1 untouched holdout: 893 trades; mean net -0.2567%; bootstrap 95% CI [-0.3125%, -0.2061%]; 0/3 positive symbols. C1 is KILL and must not be retuned from holdout."
+        }
+      ],
+      "blockers": [],
+      "nextTest": "Run the documented-recovery DEX Screener altcoin-flow capability through the unified CLI; keep funding/expiry carry parked for maturation and do not invent new alpha.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "crypto.c1-volume-confirmed-momentum",
+      "market": "crypto",
+      "status": "KILL",
+      "mode": "research",
+      "hypothesis": "Frozen BTCUSDT/ETHUSDT/SOLUSDT 15m volume-confirmed 1h momentum long baseline, evaluated with next-bar-open entry, four-bar hold, and fixed 24 bps round-trip cost.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "tools/research/crypto_c1.py"
+      },
+      "evidence": [
+        {
+          "kind": "preregistered_contract",
+          "summary": "Contract SHA256 3c3a3bba168eac474286e4fffa78e9cd60e155f46a312a01c78bd9917d97bae8; tuning NONE; 2026-01-01..2026-08-01 untouched holdout; real-money NO_GO."
+        },
+        {
+          "kind": "holdout",
+          "summary": "Completed 2026-08-17: 893 holdout trades; mean net -0.2567%; bootstrap 95% CI [-0.3125%, -0.2061%]; positive symbols 0/3; report SHA256 a8845ad8f70b795cebe7c2d5bc623d7d578f6671deed29d4681f9f804afb8903."
+        }
+      ],
+      "blockers": [],
+      "nextTest": "NONE \u2014 KILL is final for this frozen C1 hypothesis; do not retune using the inspected holdout.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "crypto.c2-bybit-funding-carry",
+      "market": "crypto",
+      "status": "KEEP",
+      "mode": "research",
+      "hypothesis": "Recovered existing Bybit long-spot/short-perpetual positive-funding carry capability; first validate executable basis, fee hurdle, funding persistence and quote-to-settlement behavior before any historical economic PnL promotion test.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "tools/research/crypto_carry.py"
+      },
+      "evidence": [
+        {
+          "kind": "recovered_artifact",
+          "summary": "Recovered standalone scanner SHA256 639be5df77bb24db152e8f4aeea4e2fefddfcf8199bb2ac1f789fca174b99ef5 and research SHA256 812b6da082694c5f51f1913346c290a8941d32cee0f265a2165e48ea4e15de08; both offline self-tests PASS."
+        },
+        {
+          "kind": "methodology_boundary",
+          "summary": "Current recovered research measures snapshot persistence, funding history and quote-to-settlement verification; it is not a realized PnL backtest and cannot promote real-money eligibility."
+        },
+        {
+          "kind": "settlement_gate",
+          "summary": "2026-08-17 repo-internal carry run: 4 snapshots; 3 verified settlements; 2 pending; 25/40 public-data requests; decision KEEP for mechanism only; economic PnL not yet completed."
+        },
+        {
+          "kind": "economic_pnl",
+          "summary": "2026-08-17 ex-ante economic PnL audit: 3 matured episodes; mean net -0.2013%; 95% CI [-0.3582%, +0.0249%]; 1/3 positive; sum net -0.603926 USDT. Signal remains unproven; no retuning."
+        }
+      ],
+      "blockers": [
+        "INSUFFICIENT_MATURED_EX_ANTE_EPISODES"
+      ],
+      "nextTest": "Park until additional saved ex-ante carry anchors mature; rerun the frozen economic-PnL gate without retuning. Do not promote from the current 3-episode sample.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "crypto.c3-bybit-expiry-carry",
+      "market": "crypto",
+      "status": "KEEP",
+      "mode": "research",
+      "hypothesis": "Recovered existing Bybit expiry cash-and-carry scanner: buy spot and short matched Linear Futures quantity from executable REST order-book depth, then hold the futures leg to delivery. Recovered output is locked-edge-before-financing evidence, not proven profitability.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "tools/research/crypto_expiry_carry.py"
+      },
+      "evidence": [
+        {
+          "kind": "recovered_artifact",
+          "summary": "Recovered standalone artifact SHA256 18c539eb554973a1562f46782209ec87c9f9b22b396d880d1be520f903f0f5aa. Frozen defaults: 10 bps spot taker, 5.5 bps futures taker, notionals 100/500/1000 USDT; offline self-test recovered."
+        },
+        {
+          "kind": "methodology_boundary",
+          "summary": "Recovered scanner ranks Bybit native CarryTrade spreads by executable basis minus entry/spot-exit/delivery fee estimates and reports simple APR before financing. It does not model financing, liquidation/margin, taxes, exchange risk or account-specific fees."
+        },
+        {
+          "kind": "maturation_checkpoint",
+          "summary": "2026-08-17 auto audit reused 1 legacy ex-ante snapshot with 20 anchors; 0 matured/evaluated and 20 pending; 0 network requests; report SHA256 80a9e980cc4155992ad521e467bbab123a2b3c79d465d4ac0bd6fde1405e93e0."
+        }
+      ],
+      "blockers": [
+        "20_EX_ANTE_EXPIRY_ANCHORS_PENDING_MATURATION",
+        "FINANCING_NOT_MODELED"
+      ],
+      "nextTest": "Park until saved ex-ante expiry anchors mature; then rerun the same delivery audit. Do not capture hindsight entries or infer profitability before financing is modeled.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "crypto.c4-dexscreener-altcoin-flow",
+      "market": "crypto",
+      "status": "KEEP",
+      "mode": "research",
+      "hypothesis": "Recovered documented FluxQuant altcoin-flow research: prospectively observe fresh DEX activity on Solana/Base/BSC using volume/liquidity, 5m-to-1h flow acceleration, swap velocity and transaction-count direction confirmation, then measure 5/15/30/60m paper returns against a fixed 100 bps fee+slippage hurdle.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "tools/research/crypto_altcoin_flow.py"
+      },
+      "evidence": [
+        {
+          "kind": "documented_recovery",
+          "summary": "Original artifact SHA256 is recorded as 15f1521e13a53f22cf372a72437bfacc3a0ba4fc11eb2e502c9d21fddab1c0f3; original bytes are unavailable in ChatGPT Library, but prior FluxQuant run documentation preserves method, chains, formulas, $5k liquidity / $100k MC-or-FDV / 15m-age filters, 5/15/30/60m prospective horizons and 100 bps hurdle."
+        },
+        {
+          "kind": "historical_run_note",
+          "summary": "Prior documented first run produced 3 candidates with 0 errors and 3 new observations; no prospective horizon had resolved at that checkpoint. This is capability evidence only, not profitability proof."
+        }
+      ],
+      "blockers": [
+        "PROSPECTIVE_HORIZONS_REQUIRE_FUTURE_OBSERVATIONS"
+      ],
+      "nextTest": "Run npm run research -- run crypto-altcoin-flow once to capture/reuse prospective observations; do not tune from future paper-return outcomes and do not promote from this observational lane alone.",
+      "realMoneyEligible": false
+    },
+    {
+      "id": "polymarket.wallet-execution-research",
+      "market": "polymarket",
+      "status": "KEEP",
+      "mode": "research",
+      "hypothesis": "Preserve reusable wallet groundtruth, maker/taker, settlement, HFT and markout research while current tested archetypes remain unpromoted.",
+      "implementation": {
+        "kind": "existing_module",
+        "module": "src/benchmark/polymarket-wallet.ts"
+      },
+      "evidence": [
+        {
+          "kind": "wallet_groundtruth",
+          "summary": "powerwinner sample taker-dominant; NO_GO."
+        },
+        {
+          "kind": "execution",
+          "summary": "0x50f7 pair structural gate failed or remained incomplete; NO_GO."
+        },
+        {
+          "kind": "settlement",
+          "summary": "extreme-carry entry concentration not robust; NO_GO."
+        },
+        {
+          "kind": "markout",
+          "summary": "0x3b84 has 987 frozen passive fills / 325 order episodes; external markout not measured due TLS/access blocker."
+        }
+      ],
+      "blockers": [
+        "POLYMARKET_CLOB_TLS_OR_ACCESS_CURRENT_NETWORK"
+      ],
+      "nextTest": "Resume only the smallest blocked evidence gap when a compliant data path is available; no promotion until markout/economic evidence passes.",
+      "realMoneyEligible": false
+    }
+  ]
+}

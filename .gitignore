@@ -1,0 +1,52 @@
+node_modules/
+dist/
+.env
+data/*.jsonl
+*.log
+.DS_Store
+
+data/*.json
+
+__pycache__/
+*.pyc
+
+data/*.html
+
+# Local environments
+.venv/
+.env.*
+
+# Large model/runtime files
+video-engine/runtime/
+video-engine/vendor/
+graft/
+
+# Flux local state
+.flux-dev/
+cache/
+
+# Research outputs and generated artifacts
+reports/research/
+data/polymarket/snapshots/
+
+# OS
+.DS_Store
+
+# FluxQuant research caches
+fluxquant_crypto_c1_cache/
+
+# FluxQuant research caches
+fluxquant_crypto_c1_cache/
+
+# Large research datasets
+data/full-audit-v1.*/
+data/polymarket-natural-archetype-onchain/
+data/openmarket-unified/
+data/*.jsonl
+
+# FluxQuant generated data
+data/
+reports/
+cache/
+fluxquant_crypto_c1_cache/
+.fluxquant-backups/

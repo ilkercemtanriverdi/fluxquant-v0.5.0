@@ -1,0 +1,39 @@
+{
+  "name": "fluxquant",
+  "version": "1.5.0",
+  "private": true,
+  "description": "FluxQuant v1.5 consolidated research baseline \u2014 causal sports paper engine, provenance/commission gates, bankroll risk controls, robust CLV/ROI evidence checks, and fail-closed live-money gates.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "replay": "tsx src/cli/replay.ts",
+    "train": "tsx src/cli/train.ts",
+    "scout": "tsx src/cli/scout.ts",
+    "shadow": "tsx src/cli/shadow.ts",
+    "network": "tsx src/cli/network.ts",
+    "openmarket:export": "python3 tools/openmarket_export.py",
+    "openmarket:prepare": "python3 tools/openmarket_prepare.py",
+    "doctor": "tsx src/cli/doctor.ts",
+    "suite": "tsx src/cli/suite.ts",
+    "validate:full": "npm test && npm run typecheck && npm run doctor && python3 tools/test_full_audit.py",
+    "pairscan": "tsx src/cli/pairscan.ts",
+    "pairvalidate": "tsx src/cli/pairvalidate.ts",
+    "paper:pair": "tsx src/cli/paper-pair.ts",
+    "test:python": "python3 tools/test_openmarket_export.py",
+    "eligibility": "tsx src/cli/eligibility.ts",
+    "audit:full": "python3 tools/full_audit.py",
+    "sports:audit": "tsx src/cli/sports-audit.ts",
+    "research": "tsx src/cli/research.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "22.10.0",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
