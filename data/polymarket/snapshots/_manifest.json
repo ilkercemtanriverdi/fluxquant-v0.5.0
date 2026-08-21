@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "wallet-trades",
+    "filename": "wallet-trades-20260821-122727Z.json",
+    "checksum_sha256": "33752803f2931c1acbee0f605af4ad6010bea8569b0c7f91e50cf9774906f435",
+    "captured_at": "2026-08-21T12:27:27Z",
+    "record_count": 500
+  },
+  {
+    "kind": "markets",
+    "filename": "markets-20260821-122728Z.json",
+    "checksum_sha256": "84e8d922f7ac7e4210db32a6697e7bb275a38e5653d69985fdd6c528ae1d3485",
+    "captured_at": "2026-08-21T12:27:28Z",
+    "record_count": 200
+  }
+]
