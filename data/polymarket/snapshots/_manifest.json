@@ -4911,5 +4911,28 @@
     "checksum_sha256": "b12a4eb54cacb6c5f0a07d7b4c9584dd8e5bad621d30677e0740bb01672790cc",
     "captured_at": "2026-10-06T01:10:37Z",
     "record_count": 200
+  },
+  {
+    "kind": "wallet-trades-0x04b6d7e930cf9e493c5e6ef24b496294f95594c8",
+    "filename": "wallet-trades-0x04b6d7e930cf9e493c5e6ef24b496294f95594c8-20261006-110433Z.json",
+    "checksum_sha256": "33752803f2931c1acbee0f605af4ad6010bea8569b0c7f91e50cf9774906f435",
+    "captured_at": "2026-10-06T11:04:33Z",
+    "record_count": 500,
+    "wallet": "0x04b6d7e930cf9e493c5e6ef24b496294f95594c8"
+  },
+  {
+    "kind": "wallet-trades-0x4228048ea2f8f571ff2777cc32baee584c5134cb",
+    "filename": "wallet-trades-0x4228048ea2f8f571ff2777cc32baee584c5134cb-20261006-110434Z.json",
+    "checksum_sha256": "687fa814a813a88e0423d2feaef07e8494ea2d616c4e48d48de2744b9d798d8e",
+    "captured_at": "2026-10-06T11:04:34Z",
+    "record_count": 500,
+    "wallet": "0x4228048ea2f8f571ff2777cc32baee584c5134cb"
+  },
+  {
+    "kind": "markets",
+    "filename": "markets-20261006-110435Z.json",
+    "checksum_sha256": "3792b9c08db66741a802eb33ca2d58468203348f60924b10f1b9db38eeb58ef8",
+    "captured_at": "2026-10-06T11:04:35Z",
+    "record_count": 200
   }
 ]
