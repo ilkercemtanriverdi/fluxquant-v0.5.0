@@ -1,12 +1,33 @@
 {
   "collector_version": "1.0.0",
   "kind": "wallet-trades",
-  "captured_at": "2026-10-16T03:34:02Z",
-  "checksum_sha256": "d09293ca463c9c0b082448d4b1bbbecf32594b7a1b8815c636fede11522278ae",
-  "byte_count": 384898,
+  "captured_at": "2026-10-16T08:48:53Z",
+  "checksum_sha256": "feff193c3f71ce9d1358af290111f1cd0227c73e2a07ef4edc1ef51f0d1c289e",
+  "byte_count": 384913,
   "data": {
     "wallet": "0x4228048ea2f8f571ff2777cc32baee584c5134cb",
     "trades": [
+      {
+        "proxyWallet": "0x4228048ea2f8f571ff2777cc32baee584c5134cb",
+        "side": "BUY",
+        "asset": "72690745489526538070431694233399243185726916036568345696242713517875576745178",
+        "conditionId": "0x801213ccdc284556e5395df9add2d29e44a5a987e497754b9b12af98cc3d8381",
+        "size": 106.382979,
+        "price": 0.4699999988,
+        "timestamp": 1792135210,
+        "title": "Bitcoin Up or Down - October 16, 3:20AM-3:25AM ET",
+        "slug": "btc-updown-5m-1792135200",
+        "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+        "eventSlug": "btc-updown-5m-1792135200",
+        "outcome": "Up",
+        "outcomeIndex": 0,
+        "name": "trinity42",
+        "pseudonym": "Mountainous-Buy",
+        "bio": "",
+        "profileImage": "",
+        "profileImageOptimized": "",
+        "transactionHash": "0x861083a70f1c3b2fe7671cc58de42e248cf13876fa76cfccc09693dbfd867212"
+      },
       {
         "proxyWallet": "0x4228048ea2f8f571ff2777cc32baee584c5134cb",
         "side": "BUY",
@@ -10485,27 +10506,6 @@
         "profileImage": "",
         "profileImageOptimized": "",
         "transactionHash": "0x10b4ae8a43803f440d24a5162b3054d30c79e37cc845a0639da7a24d08e46d16"
-      },
-      {
-        "proxyWallet": "0x4228048ea2f8f571ff2777cc32baee584c5134cb",
-        "side": "SELL",
-        "asset": "111088981197578105180475951520316816102338044617850163481635790111814156365496",
-        "conditionId": "0xc4e95240fdfb15454e0d391624efb4c99af0a114fbfeebf32acb8102179254c5",
-        "size": 5,
-        "price": 0.47,
-        "timestamp": 1791455600,
-        "title": "Ethereum Up or Down - October 8, 6:30AM-6:35AM ET",
-        "slug": "eth-updown-5m-1791455400",
-        "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
-        "eventSlug": "eth-updown-5m-1791455400",
-        "outcome": "Up",
-        "outcomeIndex": 0,
-        "name": "trinity42",
-        "pseudonym": "Mountainous-Buy",
-        "bio": "",
-        "profileImage": "",
-        "profileImageOptimized": "",
-        "transactionHash": "0x9a34cee19168e77be9bd053c089d421b2aebafc38fed172fcbb9d1d2deb72582"
       }
     ]
   }
