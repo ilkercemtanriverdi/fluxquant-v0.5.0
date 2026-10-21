@@ -1,7 +1,7 @@
 {
   "collector_version": "1.0.0",
   "kind": "wallet-trades",
-  "captured_at": "2026-10-20T22:59:00Z",
+  "captured_at": "2026-10-21T03:42:37Z",
   "checksum_sha256": "a1a25d3cc7f73cc8e26a5c34ec1f90840eff17de4f62bdd9d85cfb61bc78dd89",
   "byte_count": 385074,
   "data": {
